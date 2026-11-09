@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#139fe2">
+  <meta name="description" content="雾眠筹码，喜欢的音乐，拍下的日常。">
+  <title>开始 · 雾眠筹码</title>
+  <link rel="preload" href="assets/cloud-sky.webp" as="image">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="content.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <div class="sky-backdrop" aria-hidden="true"></div>
+  <div class="site-shell">
+    <header class="site-header">
+      <a class="brand" href="#home"><span class="orb brand-orb" aria-hidden="true">w</span><span>雾眠筹码<small>音乐与摄影</small></span></a>
+      <div class="header-tools"><button id="motion-toggle" class="icon-button" aria-label="暂停背景动效" aria-pressed="false" title="暂停背景动效">Ⅱ</button></div>
+    </header>
+    <div class="aero-window">
+      <div class="window-bar"><span>雾眠筹码</span><span class="window-location" id="location-name">开始</span></div>
+      <nav class="top-nav" aria-label="主导航">
+        <a href="#home" data-route="home"><span class="orb nav-orb" aria-hidden="true">⌂</span><span>开始</span></a>
+        <a href="#music" data-route="music"><span class="orb nav-orb blue-orb" aria-hidden="true">♫</span><span>音乐</span></a>
+        <a href="#photos" data-route="photos"><span class="orb nav-orb green-orb" aria-hidden="true">▣</span><span>摄影</span></a>
+      </nav>
+      <main id="main" tabindex="-1"></main>
+      <div class="window-status"><span><span class="status-dot"></span><span id="status-text">音乐与摄影</span></span><span id="item-count"></span></div>
+    </div>
+    <footer class="site-footer"><span>雾眠筹码</span><a href="credits.html">素材来源</a><a href="#home">回到开始</a></footer>
+  </div>
+  <section class="player-dock" id="player-dock" aria-label="音乐播放器" hidden>
+    <div class="player-inner">
+      <button class="orb dock-play blue-orb" data-play aria-label="播放追逐阿航" title="播放追逐阿航">▶</button>
+      <a class="dock-track" href="#music"><strong id="dock-title"></strong><span id="dock-artist"></span></a>
+      <div class="player-timeline"><span id="elapsed">0:00</span><input id="seek" type="range" min="0" max="100" step="0.1" value="0" aria-label="播放进度" aria-valuetext="0:00" disabled><span id="duration">0:00</span></div>
+      <div class="volume-controls"><button id="mute-toggle" class="icon-button" aria-label="静音" aria-pressed="false" title="静音">♪</button><input id="volume" type="range" min="0" max="1" step="0.05" value="1" aria-label="音量"></div>
+      <button id="close-player" class="icon-button" aria-label="停止并收起播放器" title="停止并收起播放器">×</button>
+    </div>
+    <p id="player-message" class="player-message" role="status" hidden></p>
+  </section>
+  <audio id="site-audio" preload="metadata"></audio>
+  <dialog id="photo-dialog" aria-labelledby="photo-title">
+    <div class="lightbox-head"><h2 id="photo-title"></h2><button id="close-photo" class="icon-button" aria-label="关闭照片">×</button></div>
+    <div class="photo-stage"><img id="photo-full" alt=""><p id="photo-load-error" role="status" hidden>照片暂时无法加载。</p></div>
+    <div class="lightbox-foot"><p id="photo-description"></p><div class="lightbox-controls"><button id="previous-photo" class="icon-button" aria-label="上一张照片" title="上一张照片">←</button><span id="photo-position"></span><button id="next-photo" class="icon-button" aria-label="下一张照片" title="下一张照片">→</button></div></div>
+  </dialog>
+  <noscript><p>请启用 JavaScript 以浏览音乐和摄影。</p></noscript>
+</body>
+</html>
