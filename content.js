@@ -292,7 +292,38 @@ window.siteContent = {
       "url": "https://music.163.com/song?id=1888864514"
     }
   ],
-  "photos": [],
+  "photos": [
+    {
+      "title": "照片 01",
+      "src": "assets/gallery/photo-01.webp",
+      "thumbnail": "assets/gallery/photo-01-thumb.webp",
+      "alt": "阳光下的庭院，两个人站在香炉旁"
+    },
+    {
+      "title": "照片 02",
+      "src": "assets/gallery/photo-02.webp",
+      "thumbnail": "assets/gallery/photo-02-thumb.webp",
+      "alt": "手心里的项链与戒指，四周带有胶片边框"
+    },
+    {
+      "title": "照片 03",
+      "src": "assets/gallery/photo-03.webp",
+      "thumbnail": "assets/gallery/photo-03-thumb.webp",
+      "alt": "粉彩色背景中的虚拟角色"
+    },
+    {
+      "title": "照片 04",
+      "src": "assets/gallery/photo-04.webp",
+      "thumbnail": "assets/gallery/photo-04-thumb.webp",
+      "alt": "巨大金色奖杯前的游戏角色合影"
+    },
+    {
+      "type": "video",
+      "title": "视频 01",
+      "src": "assets/gallery/video-01.mp4",
+      "thumbnail": "assets/gallery/video-01-poster.webp"
+    }
+  ],
   "playlist": {
     "id": "8544240648",
     "name": "我的顶级五十首",

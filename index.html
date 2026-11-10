@@ -7,9 +7,9 @@
   <meta name="description" content="雾眠筹码，喜欢的音乐，拍下的日常。">
   <title>开始 · 雾眠筹码</title>
   <link rel="preload" href="assets/cloud-sky.webp" as="image">
-  <link rel="stylesheet" href="styles.css">
-  <script defer src="content.js"></script>
-  <script defer src="app.js"></script>
+  <link rel="stylesheet" href="styles.css?v=20261110-gallery">
+  <script defer src="content.js?v=20261110-gallery"></script>
+  <script defer src="app.js?v=20261110-gallery"></script>
 </head>
 <body>
   <a class="skip-link" href="#main">跳到主要内容</a>
@@ -44,7 +44,7 @@
   <audio id="site-audio" preload="metadata"></audio>
   <dialog id="photo-dialog" aria-labelledby="photo-title">
     <div class="lightbox-head"><h2 id="photo-title"></h2><button id="close-photo" class="icon-button" aria-label="关闭照片">×</button></div>
-    <div class="photo-stage"><img id="photo-full" alt=""><p id="photo-load-error" role="status" hidden>照片暂时无法加载。</p></div>
+    <div class="photo-stage"><img id="photo-full" alt=""><video id="photo-video" controls playsinline preload="none" hidden></video><p id="photo-load-error" role="status" hidden>作品暂时无法加载。</p></div>
     <div class="lightbox-foot"><p id="photo-description"></p><div class="lightbox-controls"><button id="previous-photo" class="icon-button" aria-label="上一张照片" title="上一张照片">←</button><span id="photo-position"></span><button id="next-photo" class="icon-button" aria-label="下一张照片" title="下一张照片">→</button></div></div>
   </dialog>
   <noscript><p>请启用 JavaScript 以浏览音乐和摄影。</p></noscript>

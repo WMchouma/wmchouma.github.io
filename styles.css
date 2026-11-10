@@ -115,15 +115,18 @@ main { background: #f6fdff; border: 1px solid #72b1cf; border-top-color: #9dcddd
 .gallery-empty-message h2 { font-size: 18px; color: #375f3c; }
 .gallery-empty-message p { font-size: 13px; line-height: 1.7; color: #527b56; margin-top: 8px; }
 .photo-item { border: 0; padding: 0; background: transparent; text-align: left; }
-.photo-item img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; transition: transform 220ms var(--ease-out); }
+.photo-item img { width: 100%; aspect-ratio: 4/3; object-fit: contain; display: block; transition: transform 220ms var(--ease-out); }
 .photo-item > span { display: block; padding: 12px 0; font-size: 14px; }
-.photo-item > .photo-image { padding: 0; overflow: hidden; border-radius: 4px; background: #e3f2e8; }
+.photo-item > .photo-image { position: relative; padding: 0; overflow: hidden; border: 1px solid #ffffff; border-radius: 4px; background: #e3f2e8; box-shadow: 0 2px 6px #24748a1a; }
+.video-badge { position: absolute; right: 8px; bottom: 8px; display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border: 1px solid #ffffffb0; border-radius: 4px; color: white; background: #16475be6; font-size: 12px; }
 .skip-link { position: fixed; left: 16px; top: -80px; z-index: 100; background: white; padding: 12px 20px; border-radius: 4px; }
 .skip-link:focus { top: 16px; }
 dialog { width: min(1000px,calc(100% - 32px)); padding: 20px; border: 1px solid white; border-radius: 8px; color: var(--ink); background: #f5fdff; }
 dialog::backdrop { background: #16475bc7; backdrop-filter: blur(6px); }
 .lightbox-head { display: flex; justify-content: space-between; align-items: center; gap: 20px; margin-bottom: 16px; }
 dialog img { display: block; max-width: 100%; max-height: 70vh; margin: auto; }
+dialog video { display: block; max-width: 100%; width: auto; max-height: 65vh; max-height: 65dvh; margin: auto; background: #102f3b; }
+dialog [hidden] { display: none; }
 dialog p { padding-top: 16px; }
 .photo-stage { min-height: 160px; display: grid; place-items: center; }
 .lightbox-foot { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
@@ -226,6 +229,7 @@ input[type="range"] { accent-color: #1498b9; cursor: pointer; min-width: 0; heig
   .page-heading h1 { font-size: 28px; }
   .count-pill { gap: 4px; font-size: 12px; padding: 6px 8px; }
   .count-pill .symbol { display: none; }
+  .photos-view .page-heading { flex-wrap: wrap; gap: 16px; }
   .featured-track { grid-template-columns: minmax(0,1fr); gap: 20px; padding-bottom: 24px; }
   .featured-track h2 { font-size: 30px; }
   .featured-playback { flex-direction: row; gap: 20px; }

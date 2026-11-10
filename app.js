@@ -17,6 +17,11 @@ let photoColumns = readPreference("columns") === "2" ? 2 : 3;
 let query = "";
 let route;
 let keyboardInput = false;
+const galleryCount = () => {
+  const videos = content.photos.filter(item => item.type === "video").length;
+  const photos = content.photos.length - videos;
+  return [photos ? `${photos} 张照片` : "", videos ? `${videos} 段视频` : ""].filter(Boolean).join(" · ") || "暂无作品";
+};
 document.addEventListener("keydown", () => { keyboardInput = true; document.documentElement.classList.add("keyboard-input"); });
 document.addEventListener("pointerdown", () => { keyboardInput = false; document.documentElement.classList.remove("keyboard-input"); });
 
@@ -31,7 +36,7 @@ function homePage() {
       <div class="home-intro"><h1>雾眠筹码</h1><p class="intro-copy">喜欢的音乐，拍下的日常。</p></div>
       <div class="portal-area" aria-label="探索收藏">
         <a class="portal music-portal" href="#music"><span class="orb portal-icon blue-orb">${icon("music")}</span><div class="portal-copy"><h2>音乐</h2><p>${content.music.length} 首收藏</p></div></a>
-        <a class="portal photo-portal" href="#photos"><span class="orb portal-icon green-orb">${icon("photo")}</span><div class="portal-copy"><h2>摄影</h2><p>${content.photos.length ? `${content.photos.length} 张照片` : "暂无照片"}</p></div></a>
+        <a class="portal photo-portal" href="#photos"><span class="orb portal-icon green-orb">${icon("photo")}</span><div class="portal-copy"><h2>摄影</h2><p>${galleryCount()}</p></div></a>
       </div>
     </div>
     ${featured ? `<div class="home-feature"><div><span class="featured-label">${icon("star")}首推</span><h2>${escapeHtml(featured.title)}</h2><p>${escapeHtml(featured.artist)}</p></div>${playButton()}</div>` : ""}
@@ -62,14 +67,14 @@ function renderMusicResults() {
 }
 
 function galleryMarkup() {
-  if (content.photos.length) return `<div class="photo-grid columns-${photoColumns}">${content.photos.map((photo, index) => `<button class="photo-item" data-photo="${index}" aria-label="查看${escapeHtml(photo.title || `照片 ${index + 1}`)}"><span class="photo-image"><img src="${safeImage(photo.src)}" alt="${escapeHtml(photo.alt || photo.title || "摄影作品")}" loading="lazy"></span><span>${escapeHtml(photo.title || "未命名照片")}</span></button>`).join("")}</div>`;
+  if (content.photos.length) return `<div class="photo-grid columns-${photoColumns}">${content.photos.map((photo, index) => `<button class="photo-item" data-photo="${index}" aria-label="${photo.type === "video" ? "播放" : "查看"}${escapeHtml(photo.title || `照片 ${index + 1}`)}"><span class="photo-image"><img src="${safeImage(photo.thumbnail || photo.src)}" alt="${escapeHtml(photo.alt || photo.title || "摄影作品")}" loading="lazy" decoding="async">${photo.type === "video" ? `<span class="video-badge" aria-hidden="true">${icon("play")}视频</span>` : ""}</span><span>${escapeHtml(photo.title || "未命名照片")}</span></button>`).join("")}</div>`;
   return `<div class="gallery-empty"><div class="empty-photo-grid columns-${photoColumns}" aria-hidden="true">${Array.from({ length: photoColumns }, () => `<div class="photo-slot">${icon("photo")}</div>`).join("")}</div><div class="gallery-empty-message"><h2>暂无照片</h2><p>拍下的日常，会放在这里。</p></div></div>`;
 }
 
 function photosPage() {
   return `<section class="collection-view photos-view">
-    <div class="page-heading"><div><h1>摄影</h1><p>把日常留在光里。</p></div><span class="count-pill">${icon("photo")}${content.photos.length} 张照片</span></div>
-    <div class="gallery-toolbar"><h2>全部照片</h2><div class="view-switch" role="group" aria-label="照片布局"><button class="icon-button" data-columns="2" aria-label="宽幅布局" aria-pressed="${photoColumns === 2}" title="宽幅布局">${icon("wide")}</button><button class="icon-button" data-columns="3" aria-label="紧凑布局" aria-pressed="${photoColumns === 3}" title="紧凑布局">${icon("grid")}</button></div></div>
+    <div class="page-heading"><div><h1>摄影</h1><p>把日常留在光里。</p></div><span class="count-pill">${icon("photo")}${galleryCount()}</span></div>
+    <div class="gallery-toolbar"><h2>全部作品</h2><div class="view-switch" role="group" aria-label="照片布局"><button class="icon-button" data-columns="2" aria-label="宽幅布局" aria-pressed="${photoColumns === 2}" title="宽幅布局">${icon("wide")}</button><button class="icon-button" data-columns="3" aria-label="紧凑布局" aria-pressed="${photoColumns === 3}" title="紧凑布局">${icon("grid")}</button></div></div>
     <div id="gallery-content">${galleryMarkup()}</div><a class="back-link" href="#home">${icon("back")}返回开始</a>
   </section>`;
 }
@@ -83,7 +88,7 @@ function render() {
   document.title = `${names[route]} · 雾眠筹码`;
   document.getElementById("location-name").textContent = names[route];
   document.getElementById("status-text").textContent = ({ home: "音乐与摄影", music: "音乐收藏", photos: "摄影作品" })[route];
-  document.getElementById("item-count").textContent = route === "home" ? `${content.music.length} 首音乐 / ${content.photos.length} 张照片` : "";
+  document.getElementById("item-count").textContent = route === "home" ? `${content.music.length} 首音乐 / ${galleryCount()}` : "";
   document.querySelectorAll("[data-route]").forEach(link => {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page");
     else link.removeAttribute("aria-current");
@@ -279,16 +284,28 @@ main.addEventListener("click", event => {
 
 const photoDialog = document.getElementById("photo-dialog");
 const fullPhoto = document.getElementById("photo-full");
+const fullVideo = document.getElementById("photo-video");
 let photoIndex = 0;
 let photoTrigger;
 function showPhoto(index) {
   photoIndex = index;
   const photo = content.photos[index];
+  resetGalleryVideo();
+  const isVideo = photo.type === "video";
   document.getElementById("photo-title").textContent = photo.title || "摄影作品";
   document.getElementById("photo-load-error").hidden = true;
-  fullPhoto.hidden = false;
-  fullPhoto.src = photo.src;
-  fullPhoto.alt = photo.alt || photo.title || "摄影作品";
+  fullPhoto.hidden = isVideo;
+  fullVideo.hidden = !isVideo;
+  if (isVideo) {
+    fullPhoto.removeAttribute("src");
+    fullVideo.poster = photo.thumbnail || "";
+    fullVideo.src = photo.src;
+    fullVideo.setAttribute("aria-label", photo.title || "视频");
+    fullVideo.load();
+  } else {
+    fullPhoto.src = photo.src;
+    fullPhoto.alt = photo.alt || photo.title || "摄影作品";
+  }
   document.getElementById("photo-description").textContent = photo.description || "";
   document.getElementById("photo-position").textContent = `${index + 1} / ${content.photos.length}`;
   document.getElementById("previous-photo").disabled = index === 0;
@@ -298,12 +315,25 @@ function openPhoto(index) {
   photoTrigger = document.activeElement;
   showPhoto(index);
   photoDialog.showModal();
+  document.getElementById("close-photo").focus();
+}
+function resetGalleryVideo() {
+  fullVideo.pause();
+  fullVideo.removeAttribute("src");
+  fullVideo.load();
 }
 fullPhoto.addEventListener("error", () => { fullPhoto.hidden = true; document.getElementById("photo-load-error").hidden = false; });
+fullVideo.addEventListener("error", () => {
+  if (!fullVideo.hasAttribute("src")) return;
+  fullVideo.hidden = true;
+  document.getElementById("photo-load-error").hidden = false;
+});
+fullVideo.addEventListener("play", () => { ++playRequest; pendingPlay = false; audio.pause(); syncPlayer(); });
 document.getElementById("close-photo").addEventListener("click", () => photoDialog.close());
 document.getElementById("previous-photo").addEventListener("click", () => { if (photoIndex > 0) showPhoto(photoIndex - 1); });
 document.getElementById("next-photo").addEventListener("click", () => { if (photoIndex < content.photos.length - 1) showPhoto(photoIndex + 1); });
 photoDialog.addEventListener("keydown", event => {
+  if (event.target === fullVideo) return;
   if (event.key === "ArrowLeft" && photoIndex > 0) { event.preventDefault(); showPhoto(photoIndex - 1); }
   if (event.key === "ArrowRight" && photoIndex < content.photos.length - 1) { event.preventDefault(); showPhoto(photoIndex + 1); }
 });
@@ -312,6 +342,6 @@ photoDialog.addEventListener("click", event => {
   const bounds = photoDialog.getBoundingClientRect();
   if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) photoDialog.close();
 });
-photoDialog.addEventListener("close", () => { if (photoTrigger?.isConnected) photoTrigger.focus({ preventScroll: true }); });
+photoDialog.addEventListener("close", () => { resetGalleryVideo(); if (photoTrigger?.isConnected) photoTrigger.focus({ preventScroll: true }); });
 updateMotionControl();
 render();
