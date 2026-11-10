@@ -1,7 +1,7 @@
 (() => {
   const api = window.wumianBackend.apiBase + "/friends";
   const questions = [
-    { title: "我的真名是什么？", options: ["李建辰", "李健辰", "李健晨", "李建晨"] },
+    { title: "我最喜欢的歌手是谁？", options: ["周杰伦", "洛天依", "陈奕迅", "初音未来"] },
     { title: "我喜欢玩电脑还是手机？", options: ["电脑", "手机"] },
     { title: "我的生日是什么？", options: ["五月一日", "七月一日", "六月一日", "十月一日"] },
     { title: "我是男的还是女的？", options: ["男的", "女的"] },
