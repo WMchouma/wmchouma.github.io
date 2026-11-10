@@ -88,7 +88,7 @@ function render() {
   main.innerHTML = ({ home: homePage, music: musicPage, photos: photosPage, friends: window.friendBook.page })[route]();
   document.title = `${names[route]} · 雾眠筹码`;
   document.getElementById("location-name").textContent = names[route];
-  document.getElementById("status-text").textContent = ({ home: "音乐与摄影", music: "音乐收藏", photos: "摄影作品", friends: "好朋友名单 · 本机保存" })[route];
+  document.getElementById("status-text").textContent = ({ home: "音乐与摄影", music: "音乐收藏", photos: "摄影作品", friends: "好朋友名单 · 共享名单" })[route];
   document.getElementById("item-count").textContent = route === "home" ? `${content.music.length} 首音乐 / ${galleryCount()}` : "";
   document.querySelectorAll("[data-route]").forEach(link => {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page");

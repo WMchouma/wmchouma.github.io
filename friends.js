@@ -1,49 +1,99 @@
 (() => {
-  const key = "wumian-friends-v1";
+  const api = "https://wumian-friends-api.wmchouma.workers.dev/api/friends";
   const questions = [
-    { title: "我的真名是什么？", answers: ["李健辰"] },
-    { title: "我喜欢玩电脑还是手机？", options: ["电脑", "手机"], answers: ["电脑"] },
-    { title: "我的生日是什么？", answers: ["六月一日", "六月一号", "6月1日", "6月1号", "6月一日", "6.1", "6/1", "6-1", "06.01", "06/01", "06-01", "0601"] },
-    { title: "我是男的还是女的？", options: ["男的", "女的"], answers: ["男的"] },
-    { title: "我胖还是瘦？", options: ["胖", "瘦"], answers: ["瘦"] },
-    { title: "我喜欢的季节？", options: ["春天", "夏天", "秋天", "冬天"], answers: ["冬天"] },
-    { title: "我喜欢的天气？", options: ["晴天", "雨天", "阴天", "雪天"], answers: ["晴天"] },
-    { title: "我喜欢玩的游戏类型？", answers: ["FPS"] },
-    { title: "我喜欢的虚拟主播是谁？", answers: ["永雏塔菲"] },
-    { title: "我喜欢画画吗？", options: ["喜欢", "不喜欢"], answers: ["不喜欢"] }
+    { title: "我的真名是什么？" },
+    { title: "我喜欢玩电脑还是手机？", options: ["电脑", "手机"] },
+    { title: "我的生日是什么？" },
+    { title: "我是男的还是女的？", options: ["男的", "女的"] },
+    { title: "我胖还是瘦？", options: ["胖", "瘦"] },
+    { title: "我喜欢的季节？", options: ["春天", "夏天", "秋天", "冬天"] },
+    { title: "我喜欢的天气？", options: ["晴天", "雨天", "阴天", "雪天"] },
+    { title: "我喜欢玩的游戏类型？" },
+    { title: "我喜欢的虚拟主播是谁？" },
+    { title: "我喜欢画画吗？", options: ["喜欢", "不喜欢"] }
   ];
   const escape = (text = "") => String(text).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
-  const normalize = text => String(text).normalize("NFKC").replace(/\s+/gu, "").toLocaleLowerCase();
+  const normalize = text => String(text).normalize("NFKC").replace(/\s+/gu, "").toLowerCase();
   const cleanName = text => String(text).normalize("NFKC").replace(/\s+/gu, " ").trim();
   const validName = text => text.length > 0 && text.length <= 20 && !/[\p{Cc}\p{Cf}]/u.test(text);
-  const initialState = () => ({ phase: "name", name: "", answers: Array(questions.length).fill(""), index: 0, score: null, saved: false });
+  const initialState = () => ({ phase: "name", name: "", answers: Array(questions.length).fill(""), index: 0, score: null, requestId: crypto.randomUUID(), error: "" });
   let state = initialState();
   let root;
-  let storageError = false;
-  let scoring = false;
+  let friends = [];
+  let total = 0;
+  let nextCursor = null;
+  let loading = false;
+  let refreshQueued = false;
+  let loaded = false;
+  let listError = "";
 
-  function readFriends() {
+  async function request(url, options = {}) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      const parsed = JSON.parse(localStorage.getItem(key) || "[]");
-      if (!Array.isArray(parsed)) throw new Error("Invalid friend list");
-      storageError = false;
-      return parsed.filter(item => item && typeof item.name === "string" && validName(item.name) &&
-        Number.isInteger(item.score) && item.score >= 8 && item.score <= 10 && typeof item.date === "string" &&
-        Number.isFinite(Date.parse(item.date)));
-    } catch {
-      storageError = true;
-      return [];
+      const response = await fetch(url, { ...options, signal: controller.signal, credentials: "omit", cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "暂时无法连接，请稍后重试。");
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError || error.name === "AbortError" || error instanceof SyntaxError) {
+        throw new Error("连接超时或网络不可用，请重试。");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  function renderRoster() {
+    const roster = root?.querySelector("#friends-roster");
+    if (roster) roster.innerHTML = listMarkup();
+  }
+
+  async function loadFriends(more = false) {
+    if (loading) {
+      if (!more) refreshQueued = true;
+      return;
+    }
+    loading = true;
+    listError = "";
+    renderRoster();
+    try {
+      const currentCursor = more && nextCursor ? nextCursor : null;
+      const data = await request(api + (currentCursor ? `?cursor=${encodeURIComponent(currentCursor)}` : ""));
+      if (!Array.isArray(data.friends) || !Number.isSafeInteger(data.total) || data.total < 0 ||
+        (data.nextCursor !== null && !/^[1-9]\d*$/.test(data.nextCursor)) ||
+        data.friends.some(item => !Number.isSafeInteger(item.id) || typeof item.name !== "string" ||
+          !validName(item.name) || !Number.isInteger(item.score) || item.score < 8 || item.score > 10 ||
+          typeof item.date !== "string" || !Number.isFinite(Date.parse(item.date)))) {
+        throw new Error("名单暂时无法读取，请重试。");
+      }
+      friends = more ? [...friends, ...data.friends.filter(item => !friends.some(existing => existing.id === item.id))] : data.friends;
+      total = data.total;
+      nextCursor = data.nextCursor && data.nextCursor !== currentCursor ? data.nextCursor : null;
+      loaded = true;
+    } catch (error) {
+      listError = error.message;
+    } finally {
+      loading = false;
+      renderRoster();
+      if (refreshQueued) {
+        refreshQueued = false;
+        loadFriends();
+      }
     }
   }
 
   function listMarkup() {
-    const friends = readFriends();
-    return `<section class="friends-roster" aria-labelledby="roster-heading">
-      <div class="friends-roster-heading"><h2 id="roster-heading">好朋友名单</h2><span>${friends.length} 人</span></div>
-      <p class="friends-note">仅保存在当前浏览器，不会同步到其他设备。</p>
-      ${storageError ? `<p class="friends-error" role="alert">暂时无法读取名单，请允许浏览器保存网站数据后重试。</p>` : friends.length ?
+    return `<section class="friends-roster" aria-labelledby="roster-heading" aria-busy="${loading}">
+      <div class="friends-roster-heading"><h2 id="roster-heading">好朋友名单</h2><span>${loaded ? `${total} 人` : "—"}</span><button class="friend-text-button" data-friend-refresh ${loading ? "disabled" : ""}>刷新</button></div>
+      <p class="friends-note">所有访客共享这份名单。</p>
+      ${listError ? `<p class="friends-error" role="alert">${escape(listError)}</p>` : ""}
+      ${loading ? `<p class="friends-note" role="status">正在读取名单…</p>` : ""}
+      ${friends.length ?
         `<ul class="friend-list">${friends.map(item => `<li><span class="friend-initial" aria-hidden="true">${escape(Array.from(item.name)[0])}</span><div><h3>${escape(item.name)}</h3><time datetime="${escape(item.date)}">${new Date(item.date).toLocaleDateString("zh-CN")}</time></div><span class="friend-score">${item.score * 10}%</span></li>`).join("")}</ul>` :
-        `<div class="friends-empty"><span aria-hidden="true">♡</span><p>还没有朋友加入。</p></div>`}
+        loaded && !loading && !listError ? `<div class="friends-empty"><span aria-hidden="true">♡</span><p>还没有朋友加入。</p></div>` : ""}
+      ${nextCursor ? `<button class="glass-button friend-more" data-friend-more ${loading ? "disabled" : ""}>查看更多</button>` : ""}
     </section>`;
   }
 
@@ -55,15 +105,18 @@
       <input id="friend-name" name="name" class="friend-input" value="${escape(state.name)}" placeholder="你的名字" autocomplete="nickname" maxlength="20" required aria-describedby="friend-name-error">
       <p id="friend-name-error" class="friends-error" role="alert" hidden></p>
       <button class="glass-button primary" type="submit">开始答题 <span aria-hidden="true">→</span></button>
+      <p class="friends-note">通过答题后，名字和成绩会公开显示。</p>
     </form>`;
+    if (state.phase === "submitting") return `<div class="friend-result" role="status" aria-busy="true"><span class="friend-step">03 / 提交答案</span><h2 id="friend-stage-heading" tabindex="-1">正在核对答案…</h2><p class="friend-intro">稍等一下。</p></div>`;
+    if (state.phase === "submit-error") return `<div class="friend-result"><span class="friend-step">03 / 提交答案</span><h2 id="friend-stage-heading" tabindex="-1">暂时未能完成。</h2><p class="friends-error" role="alert">${escape(state.error)}</p><div class="friend-actions"><button class="glass-button primary" data-friend-send>重新提交</button><button class="friend-text-button" data-friend-reset>换个名字</button></div></div>`;
     if (state.phase === "result") {
       const passed = state.score >= 8;
       return `<div class="friend-result">
-        <span class="friend-step">03 / 答题结果</span><h2 id="friend-stage-heading" tabindex="-1">${passed ? state.saved ? "欢迎，好朋友。" : "答题通过。" : "再了解我一点。"}</h2>
+        <span class="friend-step">03 / 答题结果</span><h2 id="friend-stage-heading" tabindex="-1">${passed ? "欢迎，好朋友。" : "再了解我一点。"}</h2>
         <p class="result-score ${passed ? "result-pass" : ""}">${state.score * 10}<span>%</span></p>
         <p class="friend-intro">${escape(state.name)}，答对 ${state.score} / 10 道。</p>
-        <p id="friend-save-status" class="friends-note" role="status">${passed ? state.saved ? "你的名字已加入本机名单。" : "名单保存失败，请重试。" : `还差 ${8 - state.score} 道就能加入。`}</p>
-        <div class="friend-actions">${passed && !state.saved ? `<button class="glass-button primary" data-friend-save>重试保存</button>` : ""}<button class="glass-button ${passed ? "" : "primary"}" data-friend-retry>${passed ? "再答一次" : "重新答题"}</button><button class="friend-text-button" data-friend-reset>换个名字</button></div>
+        <p id="friend-save-status" class="friends-note" role="status">${passed ? "你的名字已加入名单，所有访客都能看到。" : `还差 ${8 - state.score} 道就能加入。`}</p>
+        <div class="friend-actions">${passed ? "" : `<button class="glass-button primary" data-friend-retry>重新答题</button>`}<button class="friend-text-button" data-friend-reset>换个名字</button></div>
       </div>`;
     }
     const question = questions[state.index];
@@ -91,25 +144,31 @@
   function renderStage() {
     if (!root?.querySelector(".friend-quiz")) return;
     root.querySelector(".friend-quiz").innerHTML = stageMarkup();
-    root.querySelector("#friends-roster").innerHTML = listMarkup();
+    renderRoster();
     root.querySelector("#friend-stage-heading").focus({ preventScroll: true });
     root.querySelector(".friend-quiz").scrollIntoView({ block: "nearest", behavior: "instant" });
   }
 
-  function saveRegistration() {
-    if (state.score < 8 || !validName(state.name)) return;
-    const friends = readFriends();
-    if (storageError) { state.saved = false; return; }
-    const existing = friends.find(item => normalize(item.name) === normalize(state.name));
-    if (existing) existing.score = Math.max(existing.score, state.score);
-    else friends.push({ name: state.name, score: state.score, date: new Date().toISOString() });
+  async function sendAnswers() {
+    if (state.phase === "submitting") return;
+    state.phase = "submitting";
+    renderStage();
     try {
-      // Show success only after persistence succeeds; unavailable storage must not look like registration.
-      localStorage.setItem(key, JSON.stringify(friends));
-      state.saved = true;
-    } catch {
-      state.saved = false;
+      const result = await request(api, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: state.name, answers: state.answers, requestId: state.requestId })
+      });
+      if (!Number.isInteger(result.score) || result.score < 0 || result.score > 10 || result.passed !== (result.score >= 8) ||
+        (result.passed && !result.friend)) throw new Error("结果暂时无法确认，请重试。");
+      state.score = result.score;
+      state.phase = "result";
+      if (result.passed) await loadFriends();
+    } catch (error) {
+      state.error = error.message;
+      state.phase = "submit-error";
     }
+    renderStage();
   }
 
   function submit(event) {
@@ -118,9 +177,9 @@
     if (event.target.id === "friend-name-form") {
       const name = cleanName(new FormData(event.target).get("name") || "");
       const error = root.querySelector("#friend-name-error");
-      const exists = readFriends().some(item => normalize(item.name) === normalize(name));
-      if (!validName(name) || exists || storageError) {
-        error.textContent = storageError ? "浏览器无法保存名单，请允许保存网站数据后重试。" : exists ? "这个名字已在本机名单里，换个名字吧。" : "请输入 1–20 个字的名字。";
+      const exists = friends.some(item => normalize(item.name) === normalize(name));
+      if (!validName(name) || exists) {
+        error.textContent = exists ? "这个名字已在名单里，换个名字吧。" : "请输入 1–20 个字的名字。";
         error.hidden = false;
         root.querySelector("#friend-name").setAttribute("aria-invalid", "true");
         root.querySelector("#friend-name").focus();
@@ -139,17 +198,17 @@
     }
     state.answers[state.index] = answer;
     if (state.index < questions.length - 1) state.index++;
-    else if (!scoring) {
-      scoring = true;
-      state.score = questions.reduce((score, question, index) => score + Number(question.answers.some(answer => normalize(answer) === normalize(state.answers[index]))), 0);
-      state.phase = "result";
-      if (state.score >= 8) saveRegistration();
-      scoring = false;
+    else {
+      sendAnswers();
+      return;
     }
     renderStage();
   }
 
   function click(event) {
+    if (event.target.closest("[data-friend-refresh]")) { loadFriends(); return; }
+    if (event.target.closest("[data-friend-more]")) { loadFriends(true); return; }
+    if (event.target.closest("[data-friend-send]")) { sendAnswers(); return; }
     if (event.target.closest("[data-friend-back]")) {
       const form = root.querySelector("#friend-question-form");
       state.answers[state.index] = String(new FormData(form).get("answer") || "");
@@ -158,7 +217,6 @@
     } else if (event.target.closest("[data-friend-retry]")) {
       state = { ...initialState(), name: state.name, phase: "quiz" };
     } else if (event.target.closest("[data-friend-reset]")) state = initialState();
-    else if (event.target.closest("[data-friend-save]")) saveRegistration();
     else return;
     renderStage();
   }
@@ -180,10 +238,7 @@
         if (event.target.name === "answer") state.answers[state.index] = event.target.value;
       });
     }
+    loadFriends();
   }
-  window.addEventListener("storage", event => {
-    if (event.key !== key || !root?.querySelector("#friends-roster")) return;
-    root.querySelector("#friends-roster").innerHTML = listMarkup();
-  });
   window.friendBook = { page, mount };
 })();

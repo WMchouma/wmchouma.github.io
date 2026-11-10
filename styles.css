@@ -212,6 +212,9 @@ input[type="range"] { accent-color: #1498b9; cursor: pointer; min-width: 0; heig
 .friends-roster-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0 16px; border-bottom: 1px solid #c6e0d7; }
 .friends-roster-heading h2 { font-size: 18px; font-weight: 500; }
 .friends-roster-heading > span { color: var(--muted); font-size: 13px; }
+.friends-roster-heading > h2 { margin-right: auto; }
+.friends-roster-heading .friend-text-button { padding-inline: 8px; }
+.friend-more { margin-top: 20px; }
 .friend-list { list-style: none; padding: 0; margin: 12px 0 0; }
 .friend-list li { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid #d5e7e7; }
 .friend-initial { display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; border: 1px solid #adccca; border-radius: 50%; background: linear-gradient(145deg,#fff,#d4f1e6); color: #356b55; font-size: 16px; }
