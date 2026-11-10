@@ -335,3 +335,58 @@ input[type="range"] { accent-color: #1498b9; cursor: pointer; min-width: 0; heig
 @media (prefers-reduced-motion:reduce) {
   *,*::before,*::after { animation: none !important; transition: none !important; }
 }
+
+.member-status { display: block; color: #496676; margin-top: 4px; font-size: 12px; }
+.album-account-panel { border-block: 1px solid #acd5e5; padding: 24px 0; margin-bottom: 24px; }
+.album-account { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+.album-account h2,.album-access h2 { font-size: 20px; margin: 0 0 8px; }
+.album-account p,.album-access p { margin: 8px 0 16px; line-height: 1.65; }
+.album-account .friend-actions { flex-shrink: 0; flex-direction: column; align-items: flex-start; gap: 8px; }
+.verification-code { font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.verification-code strong { font-family: ui-monospace, monospace; }
+.file-button { position: relative; cursor: pointer; }
+.file-button input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.file-button:focus-within { outline: 3px solid #126a9c; outline-offset: 3px; }
+.file-button.is-disabled { opacity: .6; cursor: default; }
+.album-recovery { margin-top: 24px; }
+.album-recovery summary { cursor: pointer; padding: 8px 0; }
+.album-recovery form { display: grid; gap: 12px; max-width: 500px; margin-block: 16px; }
+.album-recovery .glass-button { justify-self: start; }
+.album-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.album-toolbar h2 { font-size: 20px; margin: 0; }
+.album-toolbar h2 small { color: #496676; font-size: 14px; font-weight: 400; margin-left: 8px; }
+.album-toolbar .friends-note { margin-bottom: 0; }
+.album-upload { display: flex; justify-content: space-between; align-items: center; gap: 24px; background: #e5f6fc; border-block: 1px solid #add6e4; padding: 16px; margin-bottom: 24px; }
+.album-upload > div:first-child { flex: 1; min-width: 0; }
+.album-upload strong { display: block; overflow-wrap: anywhere; }
+.album-upload p { margin: 8px 0; font-size: 14px; line-height: 1.5; }
+.album-upload progress { width: 100%; max-width: 480px; accent-color: #287846; }
+.album-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; }
+.album-item { min-width: 0; }
+.album-preview { appearance: none; background: none; border: 0; padding: 0; width: 100%; text-align: left; color: inherit; cursor: pointer; font: inherit; }
+.album-thumbnail { display: grid; place-items: center; aspect-ratio: 4/3; background: linear-gradient(#e5f9ff,#ccecf4); border: 1px solid #b5dbe6; border-radius: 6px; overflow: hidden; }
+.album-thumbnail > span { color: #39738a; font-size: 42px; }
+.album-thumbnail img { width: 100%; height: 100%; object-fit: cover; transition: transform 180ms ease; }
+.album-filename { display: block; font-size: 15px; font-weight: 600; margin-top: 12px; overflow-wrap: anywhere; line-height: 1.5; }
+.album-item-meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; margin-top: 4px; }
+.album-item-meta p { color: #496676; font-size: 13px; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
+.album-item-meta small { display: block; font-size: 12px; margin-top: 4px; }
+.album-item-meta button { flex-shrink: 0; }
+.album-empty { text-align: center; padding: 48px 16px; color: #496676; }
+.album-empty > span { font-size: 40px; }
+.album-empty h2 { color: #19425a; font-size: 22px; }
+#album-dialog { width: min(1000px,calc(100% - 32px)); }
+#album-media-title { overflow-wrap: anywhere; min-width: 0; }
+#album-media-stage { min-height: 240px; }
+#album-media-stage img,#album-media-stage video { width: 100%; height: auto; max-height: 75vh; object-fit: contain; }
+@media (hover:hover) and (pointer:fine) { .album-preview:hover img { transform: scale(1.025); } }
+@media (max-width:900px) { .album-grid { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; } }
+@media (max-width:620px) {
+  .top-nav a { font-size: 12px; padding-inline: 3px; }
+  .album-account { flex-direction: column; gap: 8px; }
+  .album-account .friend-actions { flex-direction: row; flex-wrap: wrap; }
+  .album-toolbar { align-items: flex-start; flex-wrap: wrap; }
+  .album-upload { flex-direction: column; align-items: stretch; gap: 12px; }
+  .album-grid { grid-template-columns: minmax(0,1fr); gap: 24px; }
+  .album-view .page-heading { flex-wrap: wrap; }
+}

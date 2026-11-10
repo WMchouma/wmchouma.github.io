@@ -1,22 +1,22 @@
 (() => {
-  const api = "https://wumian-friends-api.wmchouma.workers.dev/api/friends";
+  const api = window.wumianBackend.apiBase + "/friends";
   const questions = [
-    { title: "我的真名是什么？" },
+    { title: "我的真名是什么？", options: ["李建辰", "李健辰", "李健晨", "李建晨"] },
     { title: "我喜欢玩电脑还是手机？", options: ["电脑", "手机"] },
-    { title: "我的生日是什么？" },
+    { title: "我的生日是什么？", options: ["五月一日", "七月一日", "六月一日", "十月一日"] },
     { title: "我是男的还是女的？", options: ["男的", "女的"] },
     { title: "我胖还是瘦？", options: ["胖", "瘦"] },
     { title: "我喜欢的季节？", options: ["春天", "夏天", "秋天", "冬天"] },
-    { title: "我喜欢的天气？", options: ["晴天", "雨天", "阴天", "雪天"] },
-    { title: "我喜欢玩的游戏类型？" },
-    { title: "我喜欢的虚拟主播是谁？" },
+    { title: "我喜欢的天气？", options: ["雨天", "晴天", "阴天", "雪天"] },
+    { title: "我喜欢玩的游戏类型？", options: ["RPG", "SLG", "FPS", "MOBA"] },
+    { title: "我喜欢的虚拟主播是谁？", options: ["东雪莲", "向晚", "嘉然", "永雏塔菲"] },
     { title: "我喜欢画画吗？", options: ["喜欢", "不喜欢"] }
   ];
   const escape = (text = "") => String(text).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char]);
   const normalize = text => String(text).normalize("NFKC").replace(/\s+/gu, "").toLowerCase();
   const cleanName = text => String(text).normalize("NFKC").replace(/\s+/gu, " ").trim();
   const validName = text => text.length > 0 && text.length <= 20 && !/[\p{Cc}\p{Cf}]/u.test(text);
-  const initialState = () => ({ phase: "name", name: "", answers: Array(questions.length).fill(""), index: 0, score: null, requestId: crypto.randomUUID(), error: "" });
+  const initialState = () => ({ phase: "name", name: "", answers: Array(questions.length).fill(""), index: 0, score: null, requestId: crypto.randomUUID(), credential: window.friendSession.createToken(), error: "" });
   let state = initialState();
   let root;
   let friends = [];
@@ -91,7 +91,7 @@
       ${listError ? `<p class="friends-error" role="alert">${escape(listError)}</p>` : ""}
       ${loading ? `<p class="friends-note" role="status">正在读取名单…</p>` : ""}
       ${friends.length ?
-        `<ul class="friend-list">${friends.map(item => `<li><span class="friend-initial" aria-hidden="true">${escape(Array.from(item.name)[0])}</span><div><h3>${escape(item.name)}</h3><time datetime="${escape(item.date)}">${new Date(item.date).toLocaleDateString("zh-CN")}</time></div><span class="friend-score">${item.score * 10}%</span></li>`).join("")}</ul>` :
+        `<ul class="friend-list">${friends.map(item => `<li><span class="friend-initial" aria-hidden="true">${escape(Array.from(item.name)[0])}</span><div><h3>${escape(item.name)}</h3><time datetime="${escape(item.date)}">${new Date(item.date).toLocaleDateString("zh-CN")}</time>${item.status === "pending" ? `<small class="member-status">待确认身份</small>` : ""}</div><span class="friend-score">${item.score * 10}%</span></li>`).join("")}</ul>` :
         loaded && !loading && !listError ? `<div class="friends-empty"><span aria-hidden="true">♡</span><p>还没有朋友加入。</p></div>` : ""}
       ${nextCursor ? `<button class="glass-button friend-more" data-friend-more ${loading ? "disabled" : ""}>查看更多</button>` : ""}
     </section>`;
@@ -100,12 +100,13 @@
   function stageMarkup() {
     if (state.phase === "name") return `<form id="friend-name-form" class="friend-name-form">
       <span class="friend-step">01 / 留个名字</span><h2 id="friend-stage-heading" tabindex="-1">你叫什么名字？</h2>
-      <p class="friend-intro">10 道题，答对 8 道就能加入。</p>
+      <p class="friend-intro">10 道单选题，答对 8 道就能加入。</p>
       <label class="friend-label" for="friend-name">名字</label>
       <input id="friend-name" name="name" class="friend-input" value="${escape(state.name)}" placeholder="你的名字" autocomplete="nickname" maxlength="20" required aria-describedby="friend-name-error">
       <p id="friend-name-error" class="friends-error" role="alert" hidden></p>
       <button class="glass-button primary" type="submit">开始答题 <span aria-hidden="true">→</span></button>
-      <p class="friends-note">通过答题后，名字和成绩会公开显示。</p>
+      <p class="friends-note">名字和成绩会公开显示。相册上传需另行确认身份。</p>
+      <a class="back-link" href="#album">已有好友凭证？进入相册</a>
     </form>`;
     if (state.phase === "submitting") return `<div class="friend-result" role="status" aria-busy="true"><span class="friend-step">03 / 提交答案</span><h2 id="friend-stage-heading" tabindex="-1">正在核对答案…</h2><p class="friend-intro">稍等一下。</p></div>`;
     if (state.phase === "submit-error") return `<div class="friend-result"><span class="friend-step">03 / 提交答案</span><h2 id="friend-stage-heading" tabindex="-1">暂时未能完成。</h2><p class="friends-error" role="alert">${escape(state.error)}</p><div class="friend-actions"><button class="glass-button primary" data-friend-send>重新提交</button><button class="friend-text-button" data-friend-reset>换个名字</button></div></div>`;
@@ -115,8 +116,9 @@
         <span class="friend-step">03 / 答题结果</span><h2 id="friend-stage-heading" tabindex="-1">${passed ? "欢迎，好朋友。" : "再了解我一点。"}</h2>
         <p class="result-score ${passed ? "result-pass" : ""}">${state.score * 10}<span>%</span></p>
         <p class="friend-intro">${escape(state.name)}，答对 ${state.score} / 10 道。</p>
-        <p id="friend-save-status" class="friends-note" role="status">${passed ? "你的名字已加入名单，所有访客都能看到。" : `还差 ${8 - state.score} 道就能加入。`}</p>
-        <div class="friend-actions">${passed ? "" : `<button class="glass-button primary" data-friend-retry>重新答题</button>`}<button class="friend-text-button" data-friend-reset>换个名字</button></div>
+        <p id="friend-save-status" class="friends-note" role="status">${passed ? "已加入名单。请到相册获取核验码，联系站点主人确认身份。" : `还差 ${8 - state.score} 道就能加入。`}</p>
+        <div class="friend-actions">${passed ? `<a class="glass-button primary" href="#album">进入挚友相册</a><button class="friend-text-button" data-friend-backup>备份好友凭证</button>` : `<button class="glass-button primary" data-friend-retry>重新答题</button>`}<button class="friend-text-button" data-friend-reset>换个名字</button></div>
+        ${passed ? `<p class="friends-note">换设备时可导入凭证。请妥善保管，不要分享。</p>` : ""}
       </div>`;
     }
     const question = questions[state.index];
@@ -125,8 +127,7 @@
       <div class="friend-quiz-top"><span class="friend-step">02 / ${escape(state.name)}</span><span class="friend-question-count">第 ${state.index + 1} / 10 题</span></div>
       <progress class="friend-progress" value="${state.index}" max="10" aria-label="答题进度">${state.index} / 10</progress>
       <fieldset class="friend-question"><legend id="friend-stage-heading" tabindex="-1">${escape(question.title)}</legend>
-        ${question.options ? `<div class="friend-options">${question.options.map((option, index) => `<label class="friend-option"><input type="radio" name="answer" value="${escape(option)}" ${value === option ? "checked" : ""} required><span>${escape(option)}</span></label>`).join("")}</div>` :
-          `<label class="sr-only" for="friend-answer">你的答案</label><input id="friend-answer" class="friend-input" name="answer" value="${escape(value)}" placeholder="输入答案" maxlength="40" autocomplete="off" spellcheck="false" required>`}
+        <div class="friend-options">${question.options.map(option => `<label class="friend-option"><input type="radio" name="answer" value="${escape(option)}" ${value === option ? "checked" : ""} required><span>${escape(option)}</span></label>`).join("")}</div>
       </fieldset>
       <div class="friend-actions"><button type="button" class="friend-text-button" data-friend-back>${state.index ? "上一题" : "修改名字"}</button><button class="glass-button primary" type="submit">${state.index === 9 ? "提交答案" : "下一题"}<span aria-hidden="true">→</span></button></div>
       <p class="friends-note">答对至少 8 道即可加入。</p>
@@ -135,7 +136,7 @@
 
   function page() {
     return `<section class="collection-view friends-view">
-      <div class="page-heading"><div><h1>好朋友名单</h1><p>你有多了解我？</p></div><span class="count-pill">80% 就能加入</span></div>
+      <div class="page-heading"><div><h1>好朋友名单</h1><p>你有多了解我？</p></div><a class="glass-button" href="#album">挚友相册 <span aria-hidden="true">→</span></a></div>
       <div class="friends-layout"><section class="friend-quiz" aria-labelledby="friend-stage-heading">${stageMarkup()}</section><div id="friends-roster">${listMarkup()}</div></div>
       <a class="back-link" href="#home"><span aria-hidden="true">←</span>返回开始</a>
     </section>`;
@@ -154,16 +155,20 @@
     state.phase = "submitting";
     renderStage();
     try {
+      window.friendSession.pending(state.credential);
       const result = await request(api, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: state.name, answers: state.answers, requestId: state.requestId })
+        body: JSON.stringify({ name: state.name, answers: state.answers, requestId: state.requestId, credential: state.credential })
       });
       if (!Number.isInteger(result.score) || result.score < 0 || result.score > 10 || result.passed !== (result.score >= 8) ||
         (result.passed && !result.friend)) throw new Error("结果暂时无法确认，请重试。");
       state.score = result.score;
       state.phase = "result";
-      if (result.passed) await loadFriends();
+      if (result.passed) {
+        window.friendSession.accept(state.credential, result.friend);
+        await loadFriends();
+      } else window.friendSession.clearPending();
     } catch (error) {
       state.error = error.message;
       state.phase = "submit-error";
@@ -179,7 +184,7 @@
       const error = root.querySelector("#friend-name-error");
       const exists = friends.some(item => normalize(item.name) === normalize(name));
       if (!validName(name) || exists) {
-        error.textContent = exists ? "这个名字已在名单里，换个名字吧。" : "请输入 1–20 个字的名字。";
+        error.textContent = exists ? "名字已使用。同名请加备注；已有账号请导入凭证，丢失请联系站点主人。" : "请输入 1–20 个字的名字。";
         error.hidden = false;
         root.querySelector("#friend-name").setAttribute("aria-invalid", "true");
         root.querySelector("#friend-name").focus();
@@ -191,11 +196,7 @@
       return;
     }
     const answer = String(new FormData(event.target).get("answer") || "").trim();
-    if (!answer) {
-      const field = event.target.querySelector(".friend-input");
-      if (field) { field.setCustomValidity("请填写答案。"); field.reportValidity(); }
-      return;
-    }
+    if (!questions[state.index].options.includes(answer)) return;
     state.answers[state.index] = answer;
     if (state.index < questions.length - 1) state.index++;
     else {
@@ -206,6 +207,7 @@
   }
 
   function click(event) {
+    if (event.target.closest("[data-friend-backup]")) { window.friendSession.backup(); return; }
     if (event.target.closest("[data-friend-refresh]")) { loadFriends(); return; }
     if (event.target.closest("[data-friend-more]")) { loadFriends(true); return; }
     if (event.target.closest("[data-friend-send]")) { sendAnswers(); return; }
@@ -229,7 +231,6 @@
       root.addEventListener("submit", submit);
       root.addEventListener("click", click);
       root.addEventListener("input", event => {
-        if (event.target.matches("#friend-answer")) event.target.setCustomValidity("");
         if (event.target.matches("#friend-name")) {
           state.name = event.target.value;
           event.target.removeAttribute("aria-invalid");

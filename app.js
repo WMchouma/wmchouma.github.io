@@ -1,6 +1,6 @@
 const content = window.siteContent;
 const main = document.querySelector("main");
-const names = { home: "开始", music: "音乐", photos: "摄影", friends: "朋友" };
+const names = { home: "开始", music: "音乐", photos: "摄影", friends: "朋友", album: "挚友相册" };
 const featured = content.music.find(item => item.featured);
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const symbols = { play: "▶", pause: "Ⅱ", music: "♫", photo: "▣", external: "↗", back: "←", star: "☆", wide: "◫", grid: "▦", search: "⌕", close: "×" };
@@ -81,14 +81,15 @@ function photosPage() {
 }
 
 function render() {
+  window.friendAlbum.unmount();
   const requested = window.location.hash.slice(1) || "home";
   route = Object.hasOwn(names, requested) ? requested : "home";
   if (requested !== route) history.replaceState(null, "", `#${route}`);
   document.getElementById("photo-dialog").close();
-  main.innerHTML = ({ home: homePage, music: musicPage, photos: photosPage, friends: window.friendBook.page })[route]();
+  main.innerHTML = ({ home: homePage, music: musicPage, photos: photosPage, friends: window.friendBook.page, album: window.friendAlbum.page })[route]();
   document.title = `${names[route]} · 雾眠筹码`;
   document.getElementById("location-name").textContent = names[route];
-  document.getElementById("status-text").textContent = ({ home: "音乐与摄影", music: "音乐收藏", photos: "摄影作品", friends: "好朋友名单 · 共享名单" })[route];
+  document.getElementById("status-text").textContent = ({ home: "音乐与摄影", music: "音乐收藏", photos: "摄影作品", friends: "好朋友名单 · 共享名单", album: "挚友相册 · 仅限已确认的朋友" })[route];
   document.getElementById("item-count").textContent = route === "home" ? `${content.music.length} 首音乐 / ${galleryCount()}` : "";
   document.querySelectorAll("[data-route]").forEach(link => {
     if (link.dataset.route === route) link.setAttribute("aria-current", "page");
@@ -96,6 +97,7 @@ function render() {
   });
   if (route === "music") renderMusicResults();
   if (route === "friends") window.friendBook.mount(main);
+  if (route === "album") window.friendAlbum.mount(main);
   syncPlayer();
   if (!keyboardInput && !reducedMotion.matches) {
     main.getAnimations().forEach(animation => animation.cancel());
